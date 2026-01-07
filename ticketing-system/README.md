@@ -29,6 +29,7 @@ That's it! The platform will be running with PostgreSQL, Redis, and the API.
 - **Audit Logging**: Immutable audit trails for all modifications
 - **SLA Management**: Automated deadline calculation and breach detection
 - **Governance**: Policy enforcement and compliance reporting
+- **Mock Ticket Generator**: AI-powered automatic ticket generation for testing and demos
 
 ## Technology Stack
 
@@ -179,6 +180,14 @@ make help
 - `PUT /api/incidents/:id` - Update incident
 - `POST /api/incidents/:id/transition` - Change incident status
 - `GET /api/incidents` - Search incidents with filters
+
+### Mock Ticket Generator
+
+- `GET /api/mock-generator/ticket` - Generate single mock ticket (preview)
+- `POST /api/mock-generator/tickets` - Generate multiple mock tickets
+- `POST /api/mock-generator/bulk-create` - Bulk create tickets with scheduling
+
+For detailed mock generator API documentation, see [MOCK-GENERATOR-API.md](MOCK-GENERATOR-API.md).
 
 ### Authentication
 
