@@ -8,6 +8,18 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(rateLimit);
 
+app.get('/', (req, res) => {
+  res.json({
+    name: 'ITSM Platform API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      incidents: '/api/incidents'
+    },
+    documentation: 'See README.md for API documentation'
+  });
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
