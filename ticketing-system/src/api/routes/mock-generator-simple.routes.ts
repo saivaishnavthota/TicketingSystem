@@ -104,7 +104,7 @@ router.get('/ticket', async (req, res) => {
  */
 router.post('/scheduler/start', async (req, res) => {
     try {
-        const { intervalMinutes = 3 } = req.body;
+        const { intervalMinutes = 2 } = req.body;
 
         if (intervalMinutes < 1 || intervalMinutes > 60) {
             res.status(400).json({

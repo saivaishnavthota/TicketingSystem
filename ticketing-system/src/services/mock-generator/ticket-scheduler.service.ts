@@ -12,7 +12,7 @@ export class TicketSchedulerService {
     /**
      * Start automatic ticket generation
      */
-    start(intervalMinutes: number = 3, authContext: AuthContext): void {
+    start(intervalMinutes: number = 2, authContext: AuthContext): void {
         if (this.isRunning) {
             throw new Error('Ticket scheduler is already running');
         }
