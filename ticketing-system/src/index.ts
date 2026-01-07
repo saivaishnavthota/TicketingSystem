@@ -1,6 +1,7 @@
 import express from 'express';
 import incidentsRouter from './api/routes/incidents.routes.js';
 import mockGeneratorRouter from './api/routes/mock-generator.routes.js';
+import mockGeneratorSimpleRouter from './api/routes/mock-generator-simple.routes.js';
 import { rateLimit } from './middleware/rate-limit.middleware.js';
 
 const app = express();
@@ -16,7 +17,8 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       incidents: '/api/incidents',
-      mockGenerator: '/api/mock-generator'
+      mockGenerator: '/api/mock-generator',
+      mockGeneratorSimple: '/api/mock-generator-simple'
     },
     documentation: 'See README.md for API documentation'
   });
@@ -29,6 +31,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/incidents', incidentsRouter);
 app.use('/api/mock-generator', mockGeneratorRouter);
+app.use('/api/mock-generator-simple', mockGeneratorSimpleRouter);
 
 // Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

@@ -3,20 +3,19 @@ import { mockTicketGenerator } from '../../services/mock-generator/mock-ticket.s
 import { ticketScheduler } from '../../services/mock-generator/ticket-scheduler.service.js';
 import { incidentService } from '../../services/incident/incident.service.js';
 import { authenticate } from '../../middleware/auth.middleware.js';
-import { requirePermission } from '../../middleware/permission.middleware.js';
 
 const router = Router();
 
 router.use(authenticate);
 
 /**
- * Generate and create mock tickets
- * POST /api/mock-generator/tickets
+ * Generate and create mock tickets (simplified version without complex permissions)
+ * POST /api/mock-generator-simple/tickets
  * Query params:
  * - count: number of tickets to generate (default: 1, max: 50)
  * - createInSystem: whether to actually create the tickets in the system (default: false)
  */
-router.post('/tickets', requirePermission('create', 'incident'), async (req, res) => {
+router.post('/tickets', async (req, res) => {
     try {
         const count = Math.min(parseInt(req.query.count as string) || 1, 50);
         const createInSystem = req.query.createInSystem === 'true';
@@ -73,7 +72,7 @@ router.post('/tickets', requirePermission('create', 'incident'), async (req, res
 
 /**
  * Generate a single mock ticket
- * GET /api/mock-generator/ticket
+ * GET /api/mock-generator-simple/ticket
  */
 router.get('/ticket', async (req, res) => {
     try {
@@ -100,101 +99,10 @@ router.get('/ticket', async (req, res) => {
 });
 
 /**
- * Bulk generate and create tickets with scheduling
- * POST /api/mock-generator/bulk-create
- * Body:
- * - count: number of tickets to create
- * - intervalSeconds: interval between ticket creation (default: 5 seconds)
- * - maxConcurrent: maximum concurrent creations (default: 5)
+ * Start automatic ticket generation (simplified)
+ * POST /api/mock-generator-simple/scheduler/start
  */
-router.post('/bulk-create', requirePermission('create', 'incident'), async (req, res) => {
-    try {
-        const { count = 10, intervalSeconds = 5, maxConcurrent = 5 } = req.body;
-
-        if (count > 100) {
-            res.status(400).json({
-                error: {
-                    code: 'VALIDATION_ERROR',
-                    message: 'Maximum 100 tickets can be created in bulk',
-                    timestamp: new Date().toISOString()
-                }
-            });
-            return;
-        }
-
-        // Start the bulk creation process asynchronously
-        const creationPromise = bulkCreateTickets(count, intervalSeconds, maxConcurrent, req.auth!);
-
-        res.status(202).json({
-            message: `Bulk ticket creation started. Creating ${count} tickets with ${intervalSeconds}s intervals.`,
-            status: 'in_progress',
-            estimatedCompletionTime: new Date(Date.now() + (count * intervalSeconds * 1000)).toISOString(),
-            timestamp: new Date().toISOString()
-        });
-
-        // Execute the bulk creation (fire and forget)
-        creationPromise.catch(error => {
-            console.error('Bulk ticket creation failed:', error);
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            error: {
-                code: 'BULK_CREATION_ERROR',
-                message: error instanceof Error ? error.message : 'Failed to start bulk ticket creation',
-                timestamp: new Date().toISOString(),
-                requestId: req.headers['x-request-id'] || 'unknown'
-            }
-        });
-    }
-});
-
-/**
- * Helper method for bulk ticket creation
- */
-async function bulkCreateTickets(count: number, intervalSeconds: number, maxConcurrent: number, authContext: any) {
-    const semaphore = new Array(maxConcurrent).fill(null);
-    let completed = 0;
-
-    for (let i = 0; i < count; i++) {
-        // Wait for available slot
-        await Promise.race(semaphore.filter(p => p !== null));
-
-        // Create ticket
-        const slotIndex = semaphore.findIndex(p => p === null);
-        semaphore[slotIndex] = (async () => {
-            try {
-                const mockTicket = mockTicketGenerator.generateMockTicket();
-                const { requesterName, ...incidentData } = mockTicket;
-
-                await incidentService.create(incidentData, authContext);
-                completed++;
-                console.log(`Created mock ticket ${completed}/${count}: ${mockTicket.title}`);
-            } catch (error) {
-                console.error(`Failed to create mock ticket ${i + 1}:`, error);
-            } finally {
-                semaphore[slotIndex] = null;
-            }
-        })();
-
-        // Wait for interval before next ticket
-        if (i < count - 1) {
-            await new Promise(resolve => setTimeout(resolve, intervalSeconds * 1000));
-        }
-    }
-
-    // Wait for all remaining tickets to complete
-    await Promise.all(semaphore.filter(p => p !== null));
-    console.log(`Bulk ticket creation completed. Created ${completed}/${count} tickets.`);
-}
-
-/**
- * Start automatic ticket generation
- * POST /api/mock-generator/scheduler/start
- * Body:
- * - intervalMinutes: interval between tickets in minutes (default: 3)
- */
-router.post('/scheduler/start', requirePermission('create', 'incident'), async (req, res) => {
+router.post('/scheduler/start', async (req, res) => {
     try {
         const { intervalMinutes = 3 } = req.body;
 
@@ -231,9 +139,9 @@ router.post('/scheduler/start', requirePermission('create', 'incident'), async (
 
 /**
  * Stop automatic ticket generation
- * POST /api/mock-generator/scheduler/stop
+ * POST /api/mock-generator-simple/scheduler/stop
  */
-router.post('/scheduler/stop', requirePermission('create', 'incident'), async (req, res) => {
+router.post('/scheduler/stop', async (req, res) => {
     try {
         ticketScheduler.stop();
 
@@ -256,7 +164,7 @@ router.post('/scheduler/stop', requirePermission('create', 'incident'), async (r
 
 /**
  * Get scheduler status
- * GET /api/mock-generator/scheduler/status
+ * GET /api/mock-generator-simple/scheduler/status
  */
 router.get('/scheduler/status', async (req, res) => {
     try {
@@ -284,9 +192,9 @@ router.get('/scheduler/status', async (req, res) => {
 
 /**
  * Generate a ticket immediately (for testing)
- * POST /api/mock-generator/scheduler/generate-now
+ * POST /api/mock-generator-simple/scheduler/generate-now
  */
-router.post('/scheduler/generate-now', requirePermission('create', 'incident'), async (req, res) => {
+router.post('/scheduler/generate-now', async (req, res) => {
     try {
         await ticketScheduler.generateNow(req.auth!);
 
@@ -299,34 +207,6 @@ router.post('/scheduler/generate-now', requirePermission('create', 'incident'), 
             error: {
                 code: 'GENERATION_ERROR',
                 message: error instanceof Error ? error.message : 'Failed to generate ticket',
-                timestamp: new Date().toISOString(),
-                requestId: req.headers['x-request-id'] || 'unknown'
-            }
-        });
-    }
-});
-
-/**
- * Generate a single mock ticket (no permissions required for testing)
- * GET /api/mock-generator/test-ticket
- */
-router.get('/test-ticket', authenticate, async (req, res) => {
-    try {
-        const mockTicket = mockTicketGenerator.generateMockTicket();
-
-        res.json({
-            message: 'Generated mock ticket (test mode)',
-            ticket: {
-                ...mockTicket,
-                timestamp: new Date().toISOString()
-            },
-            timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-        res.status(500).json({
-            error: {
-                code: 'MOCK_GENERATION_ERROR',
-                message: error instanceof Error ? error.message : 'Failed to generate mock ticket',
                 timestamp: new Date().toISOString(),
                 requestId: req.headers['x-request-id'] || 'unknown'
             }

@@ -110,6 +110,88 @@ POST /api/mock-generator/bulk-create
 }
 ```
 
+### 4. Start Automatic Ticket Generation (Every 3 Minutes)
+```
+POST /api/mock-generator/scheduler/start
+```
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+- `Content-Type: application/json`
+
+**Request Body:**
+```json
+{
+  "intervalMinutes": 3
+}
+```
+
+**Parameters:**
+- `intervalMinutes`: Interval between tickets in minutes (default: 3, range: 1-60)
+
+**Response:**
+```json
+{
+  "message": "Automatic ticket generation started. Creating tickets every 3 minutes.",
+  "status": "started",
+  "intervalMinutes": 3,
+  "timestamp": "2026-01-07T12:00:00.000Z"
+}
+```
+
+### 5. Stop Automatic Ticket Generation
+```
+POST /api/mock-generator/scheduler/stop
+```
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Response:**
+```json
+{
+  "message": "Automatic ticket generation stopped",
+  "status": "stopped",
+  "timestamp": "2026-01-07T12:00:00.000Z"
+}
+```
+
+### 6. Get Scheduler Status
+```
+GET /api/mock-generator/scheduler/status
+```
+
+**Response:**
+```json
+{
+  "message": "Scheduler status retrieved",
+  "scheduler": {
+    "isRunning": true,
+    "ticketCount": 15,
+    "startTime": "2026-01-07T11:00:00.000Z",
+    "uptime": 3600000,
+    "uptimeMinutes": 60
+  },
+  "timestamp": "2026-01-07T12:00:00.000Z"
+}
+```
+
+### 7. Generate Ticket Immediately
+```
+POST /api/mock-generator/scheduler/generate-now
+```
+
+**Headers:**
+- `Authorization: Bearer <token>` (required)
+
+**Response:**
+```json
+{
+  "message": "Ticket generated immediately",
+  "timestamp": "2026-01-07T12:00:00.000Z"
+}
+```
+
 ## Mock Data Features
 
 ### Priority Distribution
@@ -172,6 +254,26 @@ curl -X POST "http://localhost:3000/api/mock-generator/bulk-create" \
     "intervalSeconds": 15,
     "maxConcurrent": 2
   }'
+```
+
+### Start Automatic Generation (Every 3 Minutes)
+```bash
+curl -X POST "http://localhost:3000/api/mock-generator/scheduler/start" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"intervalMinutes": 3}'
+```
+
+### Stop Automatic Generation
+```bash
+curl -X POST "http://localhost:3000/api/mock-generator/scheduler/stop" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Check Scheduler Status
+```bash
+curl -X GET "http://localhost:3000/api/mock-generator/scheduler/status" \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ## Error Handling
